@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novel & Web Publisher Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>⚡ Novel Publisher Studio</h1>
+        <div class="tabs" role="tablist">
+            <button class="tab-btn active" data-tab="htmlTab">🧹 Bersih HTML</button>
+            <button class="tab-btn" data-tab="splitTab">✂️ Split Teks</button>
+            <button class="tab-btn" data-tab="tocTab">📑 Post & TOC Maker</button>
+        </div>
+    </header>
+
+    <!-- PANEL 1: PEMBERSIH HTML -->
+    <div id="htmlTab" class="panel active">
+        <div class="workspace">
+            <div class="column">
+                <div class="col-header">
+                    <span>1. Input HTML Kotor AI</span>
+                    <button class="action-btn btn-red small" data-action="clear" data-target="htmlInput">🗑️ Clear</button>
+                </div>
+                <textarea id="htmlInput" class="fill" placeholder="Tempelkan kode HTML dari web AI di sini..."></textarea>
+                <div class="btn-group">
+                    <button class="action-btn btn-blue grow" data-action="process-html">⚡ Bersihkan Format HTML</button>
+                </div>
+            </div>
+            <div class="column">
+                <div class="col-header">
+                    <span>2. Hasil Bersih Blogger (&lt;p&gt; + &lt;br&gt;)</span>
+                    <button class="action-btn btn-red small" data-action="clear" data-target="htmlOutput">🗑️ Clear</button>
+                </div>
+                <textarea id="htmlOutput" class="fill monospace" readonly placeholder="Hasil HTML Blogger siap tempel..."></textarea>
+                <div class="btn-group">
+                    <button class="action-btn btn-green grow" data-action="copy" data-target="htmlOutput">📋 Salin ke Clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: SPLITTER TEKS NOVEL -->
+    <div id="splitTab" class="panel">
+        <div class="workspace">
+            <div class="column">
+                <div class="col-header">
+                    <span>1. Input Teks Novel Mentah</span>
+                    <button class="action-btn btn-red small" data-action="clear" data-target="splitInput">🗑️ Clear</button>
+                </div>
+                <textarea id="splitInput" class="fill" placeholder="Tempelkan bab teks novel panjang di sini..."></textarea>
+                <div class="split-controls">
+                    <span>Batas Karakter:</span>
+                    <input type="number" id="splitLimit" value="3000">
+                    <button class="action-btn btn-blue grow" data-action="process-split">✂️ Bagi Teks Sekarang</button>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="col-header">
+                    <span>2. Hasil Potongan Bab</span>
+                    <button class="action-btn btn-red small" data-action="clear-split">🗑️ Clear</button>
+                </div>
+                <div class="nav-bar">
+                    <button class="action-btn btn-gray nav-btn" data-action="prev">◀ Prev</button>
+                    <span id="chunkCounter">Bagian: 0 / 0</span>
+                    <button class="action-btn btn-gray nav-btn" data-action="next">Next ▶</button>
+                </div>
+                <textarea id="splitOutput" class="fill" readonly placeholder="Potongan teks novel akan muncul di sini..."></textarea>
+                <div class="btn-group">
+                    <button class="action-btn btn-green grow" data-action="copy" data-target="splitOutput">📋 Salin Potongan Ini</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 3: TOC & POST GENERATOR -->
+    <div id="tocTab" class="panel">
+        <div class="workspace">
+            <div class="column">
+                <div class="col-header">
+                    <span>1. Metadata Seri & Pengaturan</span>
+                    <button class="action-btn btn-red small" data-action="reset-toc">🔄 Reset</button>
+                </div>
+
+                <div class="scrollable-body">
+                    <div class="group-card">
+                        <div class="group-title">Informasi Utama</div>
+
+                        <label>Judul Novel *:</label>
+                        <input type="text" id="tocTitle" placeholder="Misal: The Gal's Advice is 100% Accurate">
+
+                        <label>Judul Alternatif:</label>
+                        <input type="text" id="tocAltTitle" placeholder="Misal: 裏ギャルちゃんのアドバイスは100%当たる">
+
+                        <label>URL Cover / Thumbnail:</label>
+                        <input type="text" id="tocThumb" placeholder="https://blogger.googleusercontent.com/...">
+
+                        <div class="field-row">
+                            <div>
+                                <label>Author:</label>
+                                <input type="text" id="tocAuthor" placeholder="-">
+                            </div>
+                            <div>
+                                <label>Artist:</label>
+                                <input type="text" id="tocArtist" placeholder="-">
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div>
+                                <label>Tahun Rilis:</label>
+                                <input type="text" id="tocYear" value="2026">
+                            </div>
+                            <div>
+                                <label>Serialization:</label>
+                                <input type="text" id="tocSerial" placeholder="-">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group-card">
+                        <div class="group-title">Kunci Pemanggil Chapter</div>
+                        <div class="desc-text">Sinkronisasi &lt;div class="lc"&gt; & var label_chapter untuk JSON Feed Blogger.</div>
+                        <div class="inline-controls">
+                            <input type="text" id="tocLabel" value="SaintGal">
+                            <button class="action-btn btn-amber no-wrap" data-action="suggest-label">🪄 Saran Label</button>
+                        </div>
+                    </div>
+
+                    <div class="group-card">
+                        <div class="group-title">Konten Tambahan</div>
+
+                        <label>Daftar Karakter (1 baris: Nama | URL Foto):</label>
+                        <textarea id="tocCharacters" class="short-textarea" placeholder="Nama | https://url-foto.jpg"></textarea>
+
+                        <label>Sinopsis Cerita:</label>
+                        <textarea id="tocSynopsis" class="medium-textarea" placeholder="Tulis sinopsis di sini..."></textarea>
+
+                        <label>URL Galeri Gambar (1 URL per baris):</label>
+                        <textarea id="tocGallery" class="short-textarea" placeholder="https://url-gambar-1.jpg&#10;https://url-gambar-2.jpg"></textarea>
+                    </div>
+                </div>
+
+                <button class="action-btn btn-blue full-width" data-action="generate-toc">⚡ Generate Kode HTML Blogger</button>
+            </div>
+
+            <div class="column">
+                <div class="col-header">
+                    <span>2. Hasil Kode HTML (Mode HTML Blogger)</span>
+                    <button class="action-btn btn-red small" data-action="clear" data-target="tocOutput">🗑️ Clear</button>
+                </div>
+                <textarea id="tocOutput" class="fill monospace" readonly placeholder="Kode HTML lengkap hasil generate akan muncul di sini..."></textarea>
+                <div class="btn-group">
+                    <button class="action-btn btn-green grow" data-action="copy" data-target="tocOutput">📋 Salin Semua Kode HTML</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
