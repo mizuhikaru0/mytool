@@ -11,7 +11,6 @@ import {
     suggestLabel,
     generateTOCHtml,
     getTOCData,
-    normalizeLabel,
     resetTOC
 } from "./toc-maker.js";
 
@@ -72,21 +71,6 @@ function handleGenerateTOC() {
     if (!data.label) {
         alert("Error: Label Chapter wajib diisi!");
         return;
-    }
-
-    if (data.label.includes(" ")) {
-        const fixedLabel = normalizeLabel(data.label);
-
-        if (
-            !confirm(
-                `Label '${data.label}' mengandung spasi!\\nJSON Feed Blogger sering gagal jika menggunakan spasi. Ganti ke '${fixedLabel}'?`
-            )
-        ) {
-            return;
-        }
-
-        data.label = fixedLabel;
-        setValue("tocLabel", fixedLabel);
     }
 
     setValue("tocOutput", generateTOCHtml(data));
