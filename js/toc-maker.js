@@ -126,12 +126,12 @@ var label_chapter = '${data.label}';
 export function generateBloggerLabels(data) {
     const list = [];
 
-    // 1. Kunci Pemanggil Chapter (menggunakan input yang sudah ada)
+    // 1. Kunci Pemanggil Chapter (hanya dari input #tocLabel, BUKAN judul novel)
     if (data.label) {
         list.push(data.label);
     }
 
-    // 2. Genre (pilihan multi-select, masuk sebagai label individual)
+    // 2. Genre (multi-select pilihan pengguna)
     if (Array.isArray(data.genres)) {
         data.genres.forEach(genre => {
             if (genre) list.push(genre);
@@ -148,12 +148,12 @@ export function generateBloggerLabels(data) {
         list.push(data.language);
     }
 
-    // 5. Volume (opsional: format 'Volume [angka]')
+    // 5. Volume (opsional: jika ada input angka, format jadi 'Volume [angka]')
     if (data.volume) {
         list.push(`Volume ${data.volume}`);
     }
 
-    // 6. Jumlah Total Chapter (format otomatis: 'Chapter [angka]')
+    // 6. Jumlah Total Chapter (format otomatis jadi 'Chapter [angka]')
     if (data.chapterCount) {
         list.push(`Chapter ${data.chapterCount}`);
     }
@@ -163,18 +163,18 @@ export function generateBloggerLabels(data) {
         list.push(data.status);
     }
 
-    // 8. Rating (angka/desimal dipertahankan persis tanpa teks tambahan)
+    // 8. Rating (desimal dipertahankan persis sesuai input tanpa teks tambahan)
     if (data.rating) {
         list.push(data.rating);
     }
 
-    // 9. Series (diambil otomatis dari data judul novel yang sudah ada, selalu di posisi terakhir)
-    const seriesLabel = data.title || "Series";
-    list.push(seriesLabel);
+    // 9. Series (selalu teks statis 'Series' di urutan paling akhir)
+    list.push("Series");
 
-    // Pembersihan Output Otomatis:
-    // - Hapus item kosong atau spasi berlebih
-    // - Hapus duplikat tanpa mengubah urutan
+    // Pembersihan output otomatis:
+    // - Trim spasi berlebih
+    // - Hapus elemen kosong
+    // - Hapus nilai duplikat tanpa mengacak urutan
     const unique = [];
     list.forEach(item => {
         const cleaned = String(item).trim().replace(/\s+/g, " ");
@@ -183,7 +183,6 @@ export function generateBloggerLabels(data) {
         }
     });
 
-    // Format final dipisahkan koma tanpa spasi ekstra di ujung atau koma ganda
     return unique.join(",");
 }
 
@@ -193,7 +192,7 @@ export function getTOCData() {
         return el ? el.value.trim() : "";
     };
 
-    // Ambil daftar genre terpilih dari checkbox multi-select
+    // Ambil daftar genre yang dicentang dari multi-select
     const checkedGenres = [];
     document.querySelectorAll("#genreOptions input[type='checkbox']:checked").forEach(cb => {
         checkedGenres.push(cb.value);
@@ -238,7 +237,7 @@ export function resetTOC() {
         tocSynopsis: "",
         tocGallery: "",
         tocOutput: "",
-        // Input baru
+        // Form baru
         labelStatus: "",
         labelType: "",
         labelChapterCount: "",
@@ -253,7 +252,7 @@ export function resetTOC() {
         if (el) el.value = value;
     });
 
-    // Reset pilihan checkbox genre
+    // Reset centang genre
     document.querySelectorAll("#genreOptions input[type='checkbox']").forEach(cb => {
         cb.checked = false;
     });
