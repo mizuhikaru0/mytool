@@ -10,6 +10,7 @@ import {
 import {
     suggestLabel,
     generateTOCHtml,
+    generateBloggerLabels,
     getTOCData,
     resetTOC
 } from "./toc-maker.js";
@@ -73,7 +74,11 @@ function handleGenerateTOC() {
         return;
     }
 
+    // 1. Output Hasil HTML (Fungsi Lama)
     setValue("tocOutput", generateTOCHtml(data));
+
+    // 2. Output Label Blogger Terpisah (Fitur Baru)
+    setValue("bloggerLabelOutput", generateBloggerLabels(data));
 }
 
 function handleSuggestLabel() {
@@ -135,6 +140,39 @@ function handleAction(action, target, button) {
     }
 }
 
+// Inisialisasi dropdown interaktif untuk Genre (Multi-select)
+function initGenreDropdown() {
+    const trigger = document.getElementById("genreTrigger");
+    const options = document.getElementById("genreOptions");
+
+    if (!trigger || !options) return;
+
+    // Buka / tutup dropdown saat trigger diklik
+    trigger.addEventListener("click", event => {
+        event.stopPropagation();
+        options.classList.toggle("open");
+    });
+
+    // Perbarui label trigger saat checkbox dicentang/dilepas
+    options.addEventListener("change", () => {
+        const checked = Array.from(options.querySelectorAll("input:checked")).map(cb => cb.value);
+        if (checked.length > 0) {
+            trigger.textContent = checked.join(", ");
+            trigger.classList.add("has-value");
+        } else {
+            trigger.textContent = "Pilih Genre...";
+            trigger.classList.remove("has-value");
+        }
+    });
+
+    // Tutup dropdown otomatis jika klik di luar elemen genre
+    document.addEventListener("click", event => {
+        if (!event.target.closest("#genreDropdownContainer")) {
+            options.classList.remove("open");
+        }
+    });
+}
+
 document.addEventListener("click", event => {
     const tabButton = event.target.closest(".tab-btn");
     if (tabButton) {
@@ -151,3 +189,6 @@ document.addEventListener("click", event => {
         );
     }
 });
+
+// Jalankan inisialisasi dropdown genre
+initGenreDropdown();

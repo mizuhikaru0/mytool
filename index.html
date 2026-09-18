@@ -86,6 +86,7 @@
                 </div>
 
                 <div class="scrollable-body">
+                    <!-- INFORMASI UTAMA -->
                     <div class="group-card">
                         <div class="group-title">Informasi Utama</div>
 
@@ -121,6 +122,91 @@
                         </div>
                     </div>
 
+                    <!-- PENGATURAN LABEL BLOGGER (BARU: SETELAH INFORMASI UTAMA) -->
+                    <div class="group-card">
+                        <div class="group-title">Pengaturan Label Blogger</div>
+
+                        <div class="field-row">
+                            <div>
+                                <label>Status Seri:</label>
+                                <select id="labelStatus" class="form-select">
+                                    <option value="">-- Pilih Status --</option>
+                                    <option value="Ongoing">Ongoing</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Drop">Drop</option>
+                                    <option value="Hiatus">Hiatus</option>
+                                    <option value="Upcoming">Upcoming</option>
+                                    <option value="Axed">Axed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Tipe Novel:</label>
+                                <select id="labelType" class="form-select">
+                                    <option value="">-- Pilih Tipe --</option>
+                                    <option value="Light Novel">Light Novel</option>
+                                    <option value="Web Novel">Web Novel</option>
+                                    <option value="Fanfic">Fanfic</option>
+                                    <option value="Oneshot">Oneshot</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div>
+                                <label>Jumlah Total Chapter (Angka):</label>
+                                <input type="number" id="labelChapterCount" placeholder="Misal: 125">
+                            </div>
+                            <div>
+                                <label>Volume (Opsional, Angka):</label>
+                                <input type="number" id="labelVolume" placeholder="Misal: 1">
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div>
+                                <label>Rating (Desimal):</label>
+                                <input type="text" id="labelRating" placeholder="Misal: 7.0 atau 8.5">
+                            </div>
+                            <div>
+                                <label>Native Language:</label>
+                                <select id="labelLang" class="form-select">
+                                    <option value="">-- Pilih Bahasa --</option>
+                                    <option value="Japanese">Japanese</option>
+                                    <option value="Korean">Korean</option>
+                                    <option value="Chinese">Chinese</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label>Genre (Multi-Select):</label>
+                        <div class="multi-select-dropdown" id="genreDropdownContainer">
+                            <div class="multi-select-trigger" id="genreTrigger">Pilih Genre...</div>
+                            <div class="multi-select-content" id="genreOptions">
+                                <label class="checkbox-item"><input type="checkbox" value="Action"> Action</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Adventure"> Adventure</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Comedy"> Comedy</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Drama"> Drama</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Fantasy"> Fantasy</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Harem"> Harem</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Historical"> Historical</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Horror"> Horror</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Martial Arts"> Martial Arts</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Mystery"> Mystery</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Psychological"> Psychological</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Romance"> Romance</label>
+                                <label class="checkbox-item"><input type="checkbox" value="School Life"> School Life</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Sci-Fi"> Sci-Fi</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Slice of Life"> Slice of Life</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Supernatural"> Supernatural</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Thriller"> Thriller</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Tragedy"> Tragedy</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Xianxia"> Xianxia</label>
+                                <label class="checkbox-item"><input type="checkbox" value="Wuxia"> Wuxia</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KUNCI PEMANGGIL CHAPTER (TETAP MENGGUNAKAN YANG SUDAH ADA) -->
                     <div class="group-card">
                         <div class="group-title">Kunci Pemanggil Chapter</div>
                         <div class="desc-text">Sinkronisasi &lt;div class="lc"&gt; & var label_chapter untuk JSON Feed Blogger.</div>
@@ -130,6 +216,7 @@
                         </div>
                     </div>
 
+                    <!-- KONTEN TAMBAHAN -->
                     <div class="group-card">
                         <div class="group-title">Konten Tambahan</div>
 
@@ -147,14 +234,26 @@
                 <button class="action-btn btn-blue full-width" data-action="generate-toc">⚡ Generate Kode HTML Blogger</button>
             </div>
 
+            <!-- KOLOM HASIL OUTPUT (HTML DAN LABEL TERPISAH) -->
             <div class="column">
+                <!-- 1. HASIL KODE HTML (TETAP SEPERTI ASLINYA) -->
                 <div class="col-header">
                     <span>2. Hasil Kode HTML (Mode HTML Blogger)</span>
                     <button class="action-btn btn-red small" data-action="clear" data-target="tocOutput">🗑️ Clear</button>
                 </div>
-                <textarea id="tocOutput" class="fill monospace" readonly placeholder="Kode HTML lengkap hasil generate akan muncul di sini..."></textarea>
-                <div class="btn-group">
+                <textarea id="tocOutput" style="flex: 2; min-height: 180px;" class="monospace" readonly placeholder="Kode HTML lengkap hasil generate akan muncul di sini..."></textarea>
+                <div class="btn-group" style="margin-bottom: 12px;">
                     <button class="action-btn btn-green grow" data-action="copy" data-target="tocOutput">📋 Salin Semua Kode HTML</button>
+                </div>
+
+                <!-- 2. HASIL LABEL BLOGGER (PLAIN TEXT TERPISAH) -->
+                <div class="col-header">
+                    <span>3. Hasil Label Blogger (Plain Text)</span>
+                    <button class="action-btn btn-red small" data-action="clear" data-target="bloggerLabelOutput">🗑️ Clear</button>
+                </div>
+                <textarea id="bloggerLabelOutput" style="flex: 1; min-height: 80px;" readonly placeholder="Label Blogger siap paste akan muncul di sini..."></textarea>
+                <div class="btn-group">
+                    <button class="action-btn btn-amber grow" data-action="copy" data-target="bloggerLabelOutput">🏷️ Copy Label</button>
                 </div>
             </div>
         </div>

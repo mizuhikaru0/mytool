@@ -123,10 +123,84 @@ var label_chapter = '${data.label}';
 <\/script>`;
 }
 
+export function generateBloggerLabels(data) {
+    const list = [];
+
+    // 1. Kunci Pemanggil Chapter (menggunakan input yang sudah ada)
+    if (data.label) {
+        list.push(data.label);
+    }
+
+    // 2. Genre (pilihan multi-select, masuk sebagai label individual)
+    if (Array.isArray(data.genres)) {
+        data.genres.forEach(genre => {
+            if (genre) list.push(genre);
+        });
+    }
+
+    // 3. Tipe Novel
+    if (data.novelType) {
+        list.push(data.novelType);
+    }
+
+    // 4. Native Language
+    if (data.language) {
+        list.push(data.language);
+    }
+
+    // 5. Volume (opsional: format 'Volume [angka]')
+    if (data.volume) {
+        list.push(`Volume ${data.volume}`);
+    }
+
+    // 6. Jumlah Total Chapter (format otomatis: 'Chapter [angka]')
+    if (data.chapterCount) {
+        list.push(`Chapter ${data.chapterCount}`);
+    }
+
+    // 7. Status Seri
+    if (data.status) {
+        list.push(data.status);
+    }
+
+    // 8. Rating (angka/desimal dipertahankan persis tanpa teks tambahan)
+    if (data.rating) {
+        list.push(data.rating);
+    }
+
+    // 9. Series (diambil otomatis dari data judul novel yang sudah ada, selalu di posisi terakhir)
+    const seriesLabel = data.title || "Series";
+    list.push(seriesLabel);
+
+    // Pembersihan Output Otomatis:
+    // - Hapus item kosong atau spasi berlebih
+    // - Hapus duplikat tanpa mengubah urutan
+    const unique = [];
+    list.forEach(item => {
+        const cleaned = String(item).trim().replace(/\s+/g, " ");
+        if (cleaned.length > 0 && !unique.includes(cleaned)) {
+            unique.push(cleaned);
+        }
+    });
+
+    // Format final dipisahkan koma tanpa spasi ekstra di ujung atau koma ganda
+    return unique.join(",");
+}
+
 export function getTOCData() {
-    const value = id => document.getElementById(id).value.trim();
+    const value = id => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : "";
+    };
+
+    // Ambil daftar genre terpilih dari checkbox multi-select
+    const checkedGenres = [];
+    document.querySelectorAll("#genreOptions input[type='checkbox']:checked").forEach(cb => {
+        checkedGenres.push(cb.value);
+    });
 
     return {
+        // Data lama
         title: value("tocTitle"),
         altTitle: value("tocAltTitle") || "-",
         thumbUrl: value("tocThumb"),
@@ -137,7 +211,16 @@ export function getTOCData() {
         label: value("tocLabel"),
         characters: value("tocCharacters"),
         synopsis: value("tocSynopsis"),
-        gallery: value("tocGallery")
+        gallery: value("tocGallery"),
+
+        // Data baru khusus Label Blogger
+        status: value("labelStatus"),
+        novelType: value("labelType"),
+        chapterCount: value("labelChapterCount"),
+        volume: value("labelVolume"),
+        rating: value("labelRating"),
+        language: value("labelLang"),
+        genres: checkedGenres
     };
 }
 
@@ -154,10 +237,30 @@ export function resetTOC() {
         tocCharacters: "",
         tocSynopsis: "",
         tocGallery: "",
-        tocOutput: ""
+        tocOutput: "",
+        // Input baru
+        labelStatus: "",
+        labelType: "",
+        labelChapterCount: "",
+        labelVolume: "",
+        labelRating: "",
+        labelLang: "",
+        bloggerLabelOutput: ""
     };
 
     Object.entries(defaults).forEach(([id, value]) => {
-        document.getElementById(id).value = value;
+        const el = document.getElementById(id);
+        if (el) el.value = value;
     });
+
+    // Reset pilihan checkbox genre
+    document.querySelectorAll("#genreOptions input[type='checkbox']").forEach(cb => {
+        cb.checked = false;
+    });
+
+    const trigger = document.getElementById("genreTrigger");
+    if (trigger) {
+        trigger.textContent = "Pilih Genre...";
+        trigger.classList.remove("has-value");
+    }
 }

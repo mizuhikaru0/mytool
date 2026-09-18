@@ -447,3 +447,84 @@ button.action-btn:hover {
         transform: translateY(0);
     }
 }
+
+/* =========================================
+   STYLE TAMBAHAN: FORM SELECT & MULTI-SELECT
+   ========================================= */
+select.form-select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: #fff;
+    padding: 8px 10px;
+    font-size: 0.88rem;
+    margin-top: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+select.form-select:focus {
+    border-color: var(--accent);
+}
+
+.multi-select-dropdown {
+    position: relative;
+    width: 100%;
+    margin-top: 3px;
+}
+
+.multi-select-trigger {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.multi-select-trigger.has-value {
+    color: #fff;
+}
+
+.multi-select-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 100;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.multi-select-content.open {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-main);
+    cursor: pointer;
+    margin: 0;
+    padding: 2px 4px;
+}
+
+.checkbox-item input[type="checkbox"] {
+    cursor: pointer;
+}
