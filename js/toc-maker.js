@@ -263,3 +263,169 @@ export function resetTOC() {
         trigger.classList.remove("has-value");
     }
 }
+/**
+ * Membaca teks mentah bebas berbasis key: value dan mengisikannya ke form
+ */
+export function parseAndApplyMetadata(rawText) {
+    if (!rawText || !rawText.trim()) return false;
+
+    // Normalisasi teks
+    const lines = rawText.split(/\r?\n/);
+    let currentKey = null;
+    let synopsisBuffer = [];
+
+    const data = {
+        genres: []
+    };
+
+    // Daftar kata kunci yang dikenali
+    const keyPatterns = [
+        { key: "title", regex: /^(?:judul|title|name)\s*[:=]\s*(.*)$/i },
+        { key: "altTitle", regex: /^(?:judul\s*alt(?:ernatif)?|alt(?:ernative)?(?:\s*title)?)\s*[:=]\s*(.*)$/i },
+        { key: "thumb", regex: /^(?:cover|thumb(?:nail)?|gambar|image)\s*[:=]\s*(.*)$/i },
+        { key: "author", regex: /^(?:author|penulis|pengarang)\s*[:=]\s*(.*)$/i },
+        { key: "artist", regex: /^(?:artist|ilustrator|illustrator)\s*[:=]\s*(.*)$/i },
+        { key: "year", regex: /^(?:tahun(?:\s*rilis)?|year|released)\s*[:=]\s*(.*)$/i },
+        { key: "serial", regex: /^(?:serial(?:ization)?|penerbit|publisher)\s*[:=]\s*(.*)$/i },
+        { key: "label", regex: /^(?:label|tag|kode)\s*[:=]\s*(.*)$/i },
+        { key: "status", regex: /^(?:status)\s*[:=]\s*(.*)$/i },
+        { key: "type", regex: /^(?:tipe|type)\s*[:=]\s*(.*)$/i },
+        { key: "chapterCount", regex: /^(?:total\s*chapter|chapter(?:s)?)\s*[:=]\s*(.*)$/i },
+        { key: "volume", regex: /^(?:vol(?:ume)?)\s*[:=]\s*(.*)$/i },
+        { key: "rating", regex: /^(?:rating|score)\s*[:=]\s*(.*)$/i },
+        { key: "lang", regex: /^(?:bahasa|language|native(?:\s*language)?)\s*[:=]\s*(.*)$/i },
+        { key: "genre", regex: /^(?:genre(?:s)?)\s*[:=]\s*(.*)$/i },
+        { key: "synopsis", regex: /^(?:sinopsis|synopsis|deskripsi|description)\s*[:=]?\s*(.*)$/i }
+    ];
+
+    for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            if (currentKey === "synopsis") synopsisBuffer.push("");
+            continue;
+        }
+
+        // Cek apakah baris ini adalah awal dari suatu key
+        let matched = false;
+        for (const item of keyPatterns) {
+            const m = trimmed.match(item.regex);
+            if (m) {
+                currentKey = item.key;
+                matched = true;
+                const val = m[1].trim();
+
+                if (currentKey === "synopsis") {
+                    synopsisBuffer = val ? [val] : [];
+                } else if (currentKey === "genre") {
+                    data.genres = val.split(/[,/|]+/).map(g => g.trim()).filter(Boolean);
+                } else {
+                    data[currentKey] = val;
+                }
+                break;
+            }
+        }
+
+        // Jika bukan key baru dan sebelumnya sedang membaca sinopsis (multi-line)
+        if (!matched && currentKey === "synopsis") {
+            synopsisBuffer.push(trimmed);
+        }
+    }
+
+    if (synopsisBuffer.length > 0) {
+        data.synopsis = synopsisBuffer.join("\n").trim();
+    }
+
+    // Helper untuk mengisi form jika ditemukan datanya
+    const setVal = (id, val) => {
+        if (val !== undefined && val !== null && val !== "") {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        }
+    };
+
+    setVal("tocTitle", data.title);
+    setVal("tocAltTitle", data.altTitle);
+    setVal("tocThumb", data.thumb);
+    setVal("tocAuthor", data.author);
+    setVal("tocArtist", data.artist);
+    setVal("tocYear", data.year);
+    setVal("tocSerial", data.serial);
+    setVal("tocLabel", data.label);
+    setVal("tocSynopsis", data.synopsis);
+
+    // Seleksi dropdown status
+    if (data.status) {
+        const s = data.status.toLowerCase();
+        const sel = document.getElementById("labelStatus");
+        if (sel) {
+            Array.from(sel.options).forEach(opt => {
+                if (opt.value && s.includes(opt.value.toLowerCase())) sel.value = opt.value;
+            });
+        }
+    }
+
+    // Seleksi dropdown tipe novel
+    if (data.type) {
+        const t = data.type.toLowerCase();
+        const sel = document.getElementById("labelType");
+        if (sel) {
+            if (t.includes("light")) sel.value = "Light Novel";
+            else if (t.includes("web")) sel.value = "Web Novel";
+            else if (t.includes("fanfic")) sel.value = "Fanfic";
+            else if (t.includes("oneshot")) sel.value = "Oneshot";
+        }
+    }
+
+    // Seleksi dropdown bahasa
+    if (data.lang) {
+        const l = data.lang.toLowerCase();
+        const sel = document.getElementById("labelLang");
+        if (sel) {
+            if (l.includes("japan") || l.includes("jp")) sel.value = "Japanese";
+            else if (l.includes("korea") || l.includes("kr")) sel.value = "Korean";
+            else if (l.includes("chin") || l.includes("cn") || l.includes("tiongkok")) sel.value = "Chinese";
+        }
+    }
+
+    // Ekstrak angka murni untuk chapter, volume, dan rating
+    if (data.chapterCount) {
+        const m = data.chapterCount.match(/\d+/);
+        if (m) setVal("labelChapterCount", m[0]);
+    }
+    if (data.volume) {
+        const m = data.volume.match(/\d+/);
+        if (m) setVal("labelVolume", m[0]);
+    }
+    if (data.rating) {
+        const m = data.rating.match(/[\d.]+/);
+        if (m) setVal("labelRating", m[0]);
+    }
+
+    // Multi-select Genre
+    if (data.genres && data.genres.length > 0) {
+        const checkboxes = document.querySelectorAll("#genreOptions input[type='checkbox']");
+        const matched = [];
+
+        checkboxes.forEach(cb => {
+            const isMatch = data.genres.some(g => g.toLowerCase() === cb.value.toLowerCase());
+            if (isMatch) {
+                cb.checked = true;
+                matched.push(cb.value);
+            }
+        });
+
+        const trigger = document.getElementById("genreTrigger");
+        if (trigger && matched.length > 0) {
+            trigger.textContent = matched.join(", ");
+            trigger.classList.add("has-value");
+        }
+    }
+
+    // Buat saran label otomatis jika belum ada label di teks masukan tapi ada judul
+    if (!data.label && data.title) {
+        const suggested = suggestLabel(data.title);
+        setVal("tocLabel", suggested);
+    }
+
+    return true;
+}

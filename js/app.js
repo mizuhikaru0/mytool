@@ -12,7 +12,8 @@ import {
     generateTOCHtml,
     generateBloggerLabels,
     getTOCData,
-    resetTOC
+    resetTOC,
+    parseAndApplyMetadata
 } from "./toc-maker.js";
 
 const splitterState = createSplitterState();
@@ -147,6 +148,18 @@ function handleAction(action, target, button) {
                 resetTOC();
             }
             break;
+            case "parse-metadata": {
+         const raw = getValue("rawMetadataInput");
+         if (!raw || !raw.trim()) {
+             alert("Tempelkan teks metadata terlebih dahulu!");
+             return;
+         }
+         const ok = parseAndApplyMetadata(raw);
+         if (ok) {
+             alert("Metadata berhasil diterapkan ke seluruh kolom!");
+         }
+         break;
+        }
 
         default:
             console.warn(`Action tidak dikenal: ${action}`, button);
