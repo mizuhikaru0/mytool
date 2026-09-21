@@ -44,24 +44,22 @@ export function cleanHtml(raw) {
         .map(line => line.trim())
         .filter(line => line.replace(/<[^>]+>/g, "").trim().length > 0);
 
-    // Regex mengenali "Bab 1", "Chapter 1", "Ch. 1", dll. beserta sisa judulnya jika ada
+    // Regex judul chapter (angka + judul opsional)
     const chapterRegex = /^(?:bab|chapter|ch\.?)\s*(\d+)(?:\s*[:\-–—]?\s*(.*))?$/i;
-    // Regex pendukung untuk prolog/epilog
+    // Regex judul khusus (prolog/epilog)
     const specialTitleRegex = /^(?:prolog|prologue|epilog|epilogue)\b/i;
 
-    // 6. Susun elemen: Heading judul rata tengah, teks isi rata justify
+    // 6. Susun elemen: Judul Chapter di tengah, isi paragraf justify + indentasi alinea
     return lines.map((line, index) => {
         const plainText = line.replace(/<[^>]+>/g, "").trim();
 
-        // Cek pada 2 baris awal
+        // Cek 2 baris awal untuk penomoran chapter
         if (index <= 1) {
             const match = plainText.match(chapterRegex);
             if (match) {
                 const chapterNum = match[1];
                 const chapterTitle = match[2] ? match[2].trim() : "";
 
-                // Jika ada judul: Chapter [angka]: [Judul]
-                // Jika tidak ada: Chapter [angka]
                 const formattedHeading = chapterTitle.length > 0
                     ? `Chapter ${chapterNum}: ${chapterTitle}`
                     : `Chapter ${chapterNum}`;
@@ -74,6 +72,7 @@ export function cleanHtml(raw) {
             }
         }
 
-        return `<p style="text-align: justify;">${line}</p>`;
+        // Teks isi cerita: Rata kanan-kiri (justify) dengan alinea/indentasi 2em (~32px)
+        return `<p style="text-align: justify; text-indent: 2em;">${line}</p>`;
     }).join("\n<br>\n");
 }
