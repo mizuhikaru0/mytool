@@ -1,4 +1,4 @@
-import { clearElement, copyText, getValue, setValue } from "./utils.js";
+import { clearElement, copyText, copyRichText, getValue, setValue } from "./utils.js";
 import { cleanHtml } from "./html-cleaner.js";
 import {
     splitText,
@@ -37,7 +37,16 @@ function updateChunkView() {
 }
 
 function processHtml() {
-    setValue("htmlOutput", cleanHtml(getValue("htmlInput")));
+    const inputEl = document.getElementById("htmlInput");
+    const outputEl = document.getElementById("htmlOutput");
+    if (!inputEl || !outputEl) return;
+
+    // Ambil struktur HTML internal yang tersimpan saat teks berformat di-paste
+    const rawContent = inputEl.innerHTML;
+    // Bersihkan tag kotor dan susun ulang
+    const cleaned = cleanHtml(rawContent);
+    // Tampilkan langsung sebagai format visual di kotak output
+    outputEl.innerHTML = cleaned;
 }
 
 function processSplit() {
@@ -97,6 +106,10 @@ function handleAction(action, target, button) {
 
         case "copy":
             copyText(target);
+            break;
+
+        case "copy-rich":
+            copyRichText(target);
             break;
 
         case "process-html":

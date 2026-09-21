@@ -528,3 +528,27 @@ select.form-select:focus {
 .checkbox-item input[type="checkbox"] {
     cursor: pointer;
 }
+/* Styling kotak teks kaya untuk HTML Cleaner */
+.rich-editor {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: #fff;
+    padding: 10px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-y: auto;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.rich-editor:focus {
+    border-color: var(--accent);
+}
+
+/* Placeholder saat div kosong */
+.rich-editor:empty:before {
+    content: attr(placeholder);
+    color: var(--text-muted);
+    cursor: text;
+}

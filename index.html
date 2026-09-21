@@ -17,26 +17,30 @@
     </header>
 
     <!-- PANEL 1: PEMBERSIH HTML -->
+    <!-- PANEL 1: PEMBERSIH FORMAT TEKS -->
     <div id="htmlTab" class="panel active">
         <div class="workspace">
+            <!-- SISI KIRI: INPUT TEKS BERFORMAT -->
             <div class="column">
                 <div class="col-header">
-                    <span>1. Input HTML Kotor AI</span>
+                    <span>1. Tempel Teks Berformat dari Web</span>
                     <button class="action-btn btn-red small" data-action="clear" data-target="htmlInput">🗑️ Clear</button>
                 </div>
-                <textarea id="htmlInput" class="fill" placeholder="Tempelkan kode HTML dari web AI di sini..."></textarea>
+                <div id="htmlInput" class="fill rich-editor" contenteditable="true" placeholder="Tempel (Ctrl+V) teks dari web lain di sini..."></div>
                 <div class="btn-group">
-                    <button class="action-btn btn-blue grow" data-action="process-html">⚡ Bersihkan Format HTML</button>
+                    <button class="action-btn btn-blue grow" data-action="process-html">⚡ Bersihkan Format</button>
                 </div>
             </div>
+
+            <!-- SISI KANAN: OUTPUT HASIL BERSIH BERFORMAT VISUAL -->
             <div class="column">
                 <div class="col-header">
-                    <span>2. Hasil Bersih Blogger (&lt;p&gt; + &lt;br&gt;)</span>
+                    <span>2. Hasil Teks Bersih (Siap Paste ke Blogger)</span>
                     <button class="action-btn btn-red small" data-action="clear" data-target="htmlOutput">🗑️ Clear</button>
                 </div>
-                <textarea id="htmlOutput" class="fill monospace" readonly placeholder="Hasil HTML Blogger siap tempel..."></textarea>
+                <div id="htmlOutput" class="fill rich-editor" contenteditable="true" placeholder="Hasil teks berformat bersih akan muncul di sini..."></div>
                 <div class="btn-group">
-                    <button class="action-btn btn-green grow" data-action="copy" data-target="htmlOutput">📋 Salin ke Clipboard</button>
+                    <button class="action-btn btn-green grow" data-action="copy-rich" data-target="htmlOutput">📋 Salin Teks Berformat</button>
                 </div>
             </div>
         </div>

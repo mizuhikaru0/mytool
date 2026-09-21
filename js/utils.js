@@ -1,13 +1,27 @@
 export function getValue(id) {
-    return document.getElementById(id).value;
+    const el = document.getElementById(id);
+    if (!el) return "";
+    return el.isContentEditable ? el.innerHTML : el.value;
 }
 
 export function setValue(id, value) {
-    document.getElementById(id).value = value;
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.isContentEditable) {
+        el.innerHTML = value;
+    } else {
+        el.value = value;
+    }
 }
 
 export function clearElement(id) {
-    setValue(id, "");
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.isContentEditable) {
+        el.innerHTML = "";
+    } else {
+        el.value = "";
+    }
 }
 
 /**
@@ -61,26 +75,68 @@ export function showToast(message, type = "success") {
     }, 2200);
 }
 
+// Salin teks polos standar (tetap dipakai Splitter dan TOC Maker)
 export async function copyText(id) {
     const el = document.getElementById(id);
+    if (!el) return;
 
-    if (!el.value.trim()) {
+    const val = el.value !== undefined ? el.value : el.innerText;
+    if (!val || !val.trim()) {
         showToast("Tidak ada teks untuk disalin!", "warning");
         return;
     }
 
     try {
-        await navigator.clipboard.writeText(el.value);
+        await navigator.clipboard.writeText(val);
         showToast("Berhasil disalin ke clipboard!", "success");
     } catch {
         try {
-            el.select();
-            document.execCommand("copy");
-            el.setSelectionRange(0, 0);
-
+            if (el.select) {
+                el.select();
+                document.execCommand("copy");
+                el.setSelectionRange(0, 0);
+            }
             showToast("Berhasil disalin ke clipboard!", "success");
         } catch {
             showToast("Gagal menyalin teks!", "error");
         }
+    }
+}
+
+// Khusus HTML Cleaner: Salin format tebal/miring visual langsung untuk Blogger
+export async function copyRichText(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const htmlContent = el.innerHTML.trim();
+    const plainText = el.innerText.trim();
+
+    if (!htmlContent) {
+        showToast("Tidak ada teks untuk disalin!", "warning");
+        return;
+    }
+
+    try {
+        if (navigator.clipboard && window.ClipboardItem) {
+            const blobHtml = new Blob([htmlContent], { type: "text/html" });
+            const blobText = new Blob([plainText], { type: "text/plain" });
+            const item = new ClipboardItem({
+                "text/html": blobHtml,
+                "text/plain": blobText
+            });
+            await navigator.clipboard.write([item]);
+            showToast("Teks berformat disalin! Siap paste di Blogger.", "success");
+        } else {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.execCommand("copy");
+            sel.removeAllRanges();
+            showToast("Teks berformat disalin!", "success");
+        }
+    } catch {
+        showToast("Gagal menyalin format teks!", "error");
     }
 }
