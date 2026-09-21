@@ -44,16 +44,34 @@ export function cleanHtml(raw) {
         .map(line => line.trim())
         .filter(line => line.replace(/<[^>]+>/g, "").trim().length > 0);
 
-    // Pola regex untuk mendeteksi penanda judul chapter/bab (kebal huruf besar/kecil)
-    const titleRegex = /^(?:bab|chapter|ch\.|prolog|prologue|epilog|epilogue)\b/i;
+    // Regex mengenali "Bab 1", "Chapter 1", "Ch. 1", dll. beserta sisa judulnya jika ada
+    const chapterRegex = /^(?:bab|chapter|ch\.?)\s*(\d+)(?:\s*[:\-–—]?\s*(.*))?$/i;
+    // Regex pendukung untuk prolog/epilog
+    const specialTitleRegex = /^(?:prolog|prologue|epilog|epilogue)\b/i;
 
-    // 6. Susun elemen: Judul Bab menjadi heading rata tengah, teks isi menjadi justify
+    // 6. Susun elemen: Heading judul rata tengah, teks isi rata justify
     return lines.map((line, index) => {
         const plainText = line.replace(/<[^>]+>/g, "").trim();
 
-        // Cek apakah baris diawali kata bab/chapter (biasanya di baris pertama atau kedua)
-        if (index <= 2 && titleRegex.test(plainText)) {
-            return `<h2 style="text-align: center;">${line}</h2>`;
+        // Cek pada 2 baris awal
+        if (index <= 1) {
+            const match = plainText.match(chapterRegex);
+            if (match) {
+                const chapterNum = match[1];
+                const chapterTitle = match[2] ? match[2].trim() : "";
+
+                // Jika ada judul: Chapter [angka]: [Judul]
+                // Jika tidak ada: Chapter [angka]
+                const formattedHeading = chapterTitle.length > 0
+                    ? `Chapter ${chapterNum}: ${chapterTitle}`
+                    : `Chapter ${chapterNum}`;
+
+                return `<h2 style="text-align: center;">${formattedHeading}</h2>`;
+            }
+
+            if (specialTitleRegex.test(plainText)) {
+                return `<h2 style="text-align: center;">${line}</h2>`;
+            }
         }
 
         return `<p style="text-align: justify;">${line}</p>`;
