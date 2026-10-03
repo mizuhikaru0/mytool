@@ -64,7 +64,7 @@ export function cleanHtml(raw) {
                     ? `Chapter ${chapterNum}: ${chapterTitle}`
                     : `Chapter ${chapterNum}`;
 
-                return `<h2 style="text-align: center;">${formattedHeading}</h2>`;
+                return `<h1 style="text-align: center;">${formattedHeading}</h1>`;
             }
 
             if (specialTitleRegex.test(plainText)) {
