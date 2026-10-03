@@ -13,6 +13,7 @@
             <button class="tab-btn active" data-tab="htmlTab">🧹 Bersih HTML</button>
             <button class="tab-btn" data-tab="splitTab">✂️ Split Teks</button>
             <button class="tab-btn" data-tab="tocTab">📑 Post & TOC Maker</button>
+            <button class="tab-btn" data-tab="chapterTab">📚 Chapter Collector</button>
         </div>
     </header>
 
@@ -271,6 +272,91 @@
         </div>
     </div>
 
+    <!-- PANEL 4: CHAPTER COLLECTOR -->
+    <div id="chapterTab" class="panel">
+        <div class="chapter-collector-layout">
+
+            <div class="chapter-sidebar">
+                <div class="col-header">
+                    <span>📚 Chapter Sementara</span>
+                    <span id="chapterCount" class="chapter-count">0</span>
+                </div>
+
+                <div id="chapterList" class="chapter-list"></div>
+
+                <div class="btn-group">
+                    <button class="action-btn btn-red grow" data-chapter-action="delete">🗑️ Hapus</button>
+                    <button class="action-btn btn-gray grow" data-chapter-action="clear-all">🧹 Bersihkan</button>
+                </div>
+            </div>
+
+            <div class="chapter-editor-column">
+                <div class="col-header">
+                    <span>✍️ Terjemahan Chapter</span>
+                    <span id="chapterSaveStatus" class="chapter-status">Tersimpan sementara di browser</span>
+                </div>
+
+                <div class="chapter-meta-row">
+                    <div class="chapter-number-wrap">
+                        <label for="chapterNumber">Nomor Chapter:</label>
+                        <input type="number" id="chapterNumber" min="0" placeholder="1">
+                    </div>
+
+                    <button class="action-btn btn-gray" data-chapter-action="detect">🔎 Deteksi</button>
+
+                    <button class="action-btn btn-blue" data-chapter-action="import">📄 Import TXT</button>
+                    <input id="chapterFileInput" type="file" accept=".txt,text/plain" hidden>
+                </div>
+
+                <textarea id="chapterEditor" class="chapter-editor"
+                    placeholder="Paste hasil terjemahan Gemini di sini...&#10;&#10;HTML sederhana seperti <h1>, <p>, <b>, <i>, <u>, <br>, <blockquote>, <ul>, <ol>, <li> akan dipertahankan."></textarea>
+
+                <div class="chapter-rules">
+                    <span>✓ <code>Bab 1</code> → <code>Chapter 1</code></span>
+                    <span>✓ HTML sederhana tetap dipertahankan</span>
+                    <span>✓ Belum membuat file sebelum Generate ZIP</span>
+                </div>
+
+                <div class="btn-group chapter-actions">
+                    <button class="action-btn btn-blue grow" data-chapter-action="add">➕ TAMBAH CHAPTER</button>
+                    <button class="action-btn btn-amber grow" data-chapter-action="update">✏️ UPDATE</button>
+                    <button class="action-btn btn-gray grow" data-chapter-action="clear-editor">🧹 BERSIHKAN INPUT</button>
+                </div>
+            </div>
+
+            <div class="chapter-preview-column">
+                <div class="col-header">
+                    <span>👁️ Preview Source</span>
+                </div>
+
+                <div id="chapterPreview" class="chapter-preview">
+                    <div class="chapter-preview-empty">
+                        Pilih chapter untuk melihat isi sementara.
+                    </div>
+                </div>
+
+                <div class="chapter-preview-note">
+                    Preview menampilkan HTML yang tersimpan sebagai source.
+                    Tag seperti <code>&lt;b&gt;</code> dan <code>&lt;i&gt;</code> tidak dihapus.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="chapter-bottom-bar">
+            <div>
+                <label for="chapterNovelName">Nama Novel:</label>
+                <input type="text" id="chapterNovelName" value="Novel">
+                <span id="chapterStatus" class="chapter-status">0 chapter tersimpan sementara.</span>
+            </div>
+
+            <button class="action-btn btn-green chapter-generate-btn" data-chapter-action="generate">
+                📦 GENERATE ZIP
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

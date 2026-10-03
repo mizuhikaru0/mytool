@@ -7,6 +7,7 @@ import {
     previousChunk,
     nextChunk
 } from "./text-splitter.js";
+import { initChapterCollector } from "./chapter-collector.js";
 import {
     suggestLabel,
     generateTOCHtml,
@@ -218,3 +219,5 @@ document.addEventListener("click", event => {
 
 // Jalankan inisialisasi dropdown genre
 initGenreDropdown();
+// Inisialisasi Chapter Collector
+initChapterCollector();
