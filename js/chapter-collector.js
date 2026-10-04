@@ -338,9 +338,12 @@ async function generateZip() {
     const zip = new JSZip();
 
     numbers.forEach(number => {
+        // Buat entry folder eksplisit, seperti ZIP yang dibuat File Manager.
+        const folder = zip.folder(`Chapter ${number}`);
+
         // Isi ditulis sebagai UTF-8 dan tidak diproses ulang.
-        zip.file(
-            `Chapter ${number}/chapter-content.txt`,
+        folder.file(
+            "chapter-content.txt",
             state.chapters[number]
         );
     });
@@ -353,7 +356,14 @@ async function generateZip() {
         const blob = await zip.generateAsync({
             type: "blob",
             compression: "DEFLATE",
-            compressionOptions: { level: 9 }
+            compressionOptions: { level: 9 },
+
+            // Meniru karakteristik ZIP Android/File Manager:
+            // - DOS/Windows platform header
+            // - data descriptor (bit 3 / 0x0800 + 0x0008)
+            // - entry folder dibuat eksplisit
+            platform: "DOS",
+            streamFiles: true
         });
 
         const url = URL.createObjectURL(blob);
