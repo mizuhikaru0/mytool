@@ -49,7 +49,7 @@ export function cleanHtml(raw) {
     // Regex judul khusus (prolog/epilog)
     const specialTitleRegex = /^(?:prolog|prologue|epilog|epilogue)\b/i;
 
-    // 6. Susun elemen: Judul Chapter di tengah, isi paragraf justify + indentasi alinea
+    // 6. Susun elemen: Judul Chapter di tengah, isi paragraf justify
     return lines.map((line, index) => {
         const plainText = line.replace(/<[^>]+>/g, "").trim();
 
@@ -72,7 +72,7 @@ export function cleanHtml(raw) {
             }
         }
 
-        // Teks isi cerita: Rata kanan-kiri (justify) dengan alinea/indentasi 2em (~32px)
-        return `<p style="text-align: justify; text-indent: 2em;">${line}</p>`;
-    }).join("\n<br>\n");
+        // Teks isi cerita: Rata kanan-kiri (justify)
+        return `<p style="text-align: justify;">${line}</p>`;
+    }).join("\n");
 }
