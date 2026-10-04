@@ -308,12 +308,13 @@
                     <input id="chapterFileInput" type="file" accept=".txt,text/plain" hidden>
                 </div>
 
-                <textarea id="chapterEditor" class="chapter-editor"
-                    placeholder="Paste hasil terjemahan Gemini di sini...&#10;&#10;HTML sederhana seperti <h1>, <p>, <b>, <i>, <u>, <br>, <blockquote>, <ul>, <ol>, <li> akan dipertahankan."></textarea>
+                <div id="chapterEditor" class="fill rich-editor chapter-editor" contenteditable="true"
+                    placeholder="Paste hasil terjemahan Gemini di sini...&#10;&#10;Teks berformat akan diterima seperti pada Bersih HTML. Format akan dibersihkan saat Tambah / Update Chapter."></div>
 
                 <div class="chapter-rules">
-                    <span>✓ <code>Bab 1</code> → <code>Chapter 1</code></span>
-                    <span>✓ HTML sederhana tetap dipertahankan</span>
+                    <span>✓ Input mendukung paste teks berformat HTML</span>
+                    <span>✓ Proses menggunakan fungsi Bersih HTML</span>
+                    <span>✓ Judul chapter otomatis dibuat <code>&lt;h1&gt;</code></span>
                     <span>✓ Belum membuat file sebelum Generate ZIP</span>
                 </div>
 
@@ -326,18 +327,17 @@
 
             <div class="chapter-preview-column">
                 <div class="col-header">
-                    <span>👁️ Preview Source</span>
+                    <span>👁️ Preview Hasil</span>
                 </div>
 
                 <div id="chapterPreview" class="chapter-preview">
                     <div class="chapter-preview-empty">
-                        Pilih chapter untuk melihat isi sementara.
+                        Pilih chapter untuk melihat hasil bersih.
                     </div>
                 </div>
 
                 <div class="chapter-preview-note">
-                    Preview menampilkan HTML yang tersimpan sebagai source.
-                    Tag seperti <code>&lt;b&gt;</code> dan <code>&lt;i&gt;</code> tidak dihapus.
+                    Preview menampilkan hasil HTML secara visual setelah diproses dengan Bersih HTML.
                 </div>
             </div>
 

@@ -1,4 +1,15 @@
-const STORAGE_KEY = "novelPublisherStudio.chapterCollector.v1";
+import { cleanHtml } from "./html-cleaner.js";
+
+const STORAGE_KEY = "novelPublisherStudio.chapterCollector.v3";
+const LEGACY_STORAGE_KEYS = [
+    "novelPublisherStudio.chapterCollector.v2",
+    "novelPublisherStudio.chapterCollector.v1"
+];
+
+const IDB_NAME = "NovelPublisherStudio";
+const IDB_VERSION = 1;
+const IDB_STORE = "appState";
+const IDB_KEY = "chapterCollector";
 
 const state = {
     chapters: {},
@@ -7,26 +18,47 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
-function normalizeChapterText(text) {
-    if (!text) return "";
+let saveTimer = null;
+let saveQueue = Promise.resolve();
 
-    // Ubah penanda chapter "Bab 12" menjadi "Chapter 12".
-    // Hanya pada awal baris atau heading HTML agar kata "bab" di isi cerita tidak ikut berubah.
-    text = text.replace(
-        /(^|\r?\n)([ \t]*)(?:BAB|Bab|bab|CHAPTER|Chapter|chapter)([ \t]+)(\d+)([^\r\n]*)/g,
-        (m, start, spaces, word, gap, number, rest) => {
-            const trimmedRest = rest;
-            return `${start}${spaces}Chapter ${number}${trimmedRest}`;
-        }
-    );
+function getChapterEditorHtml() {
+    const editor = $("chapterEditor");
+    return editor?.isContentEditable ? editor.innerHTML : (editor?.value || "");
+}
 
-    text = text.replace(
-        /(<h[1-6]\b[^>]*>\s*)(?:BAB|Bab|bab|CHAPTER|Chapter|chapter)(\s+)(\d+)([^<]*)(<\/h[1-6]>)/gi,
-        (m, prefix, gap, number, rest, close) =>
-            `${prefix}Chapter ${number}${rest}${close}`
-    );
+function setChapterEditorHtml(html = "") {
+    const editor = $("chapterEditor");
+    if (!editor) return;
 
-    return text;
+    if (editor.isContentEditable) {
+        editor.innerHTML = html;
+    } else {
+        editor.value = html;
+    }
+}
+
+function getChapterEditorText() {
+    const editor = $("chapterEditor");
+    if (!editor) return "";
+
+    return editor.isContentEditable
+        ? editor.textContent
+        : editor.value;
+}
+
+function cleanChapterContent(rawHtml, chapterNumber) {
+    // Gunakan fungsi HTML Cleaner yang sama, tetapi judul chapter dibuat H1.
+    let cleaned = cleanHtml(rawHtml, { headingTag: "h1" });
+
+    // Jika sumber tidak memiliki penanda Chapter/Bab/Ch, tetap buat judul H1
+    // berdasarkan nomor chapter yang dimasukkan pada field.
+    if (cleaned && !/^<h1\b/i.test(cleaned.trim())) {
+        cleaned = `<h1 style="text-align: center;">Chapter ${chapterNumber}</h1>\n${cleaned}`;
+    } else if (!cleaned) {
+        cleaned = `<h1 style="text-align: center;">Chapter ${chapterNumber}</h1>`;
+    }
+
+    return cleaned;
 }
 
 function getNumber() {
@@ -35,39 +67,208 @@ function getNumber() {
     return match ? Number(match[0]) : null;
 }
 
-function saveState() {
-    const data = {
-        novelName: $("chapterNovelName")?.value || "Novel",
-        chapters: state.chapters
+function getDraftData() {
+    return {
+        chapterNumber: $("chapterNumber")?.value || "",
+        html: getChapterEditorHtml(),
+        current: state.current
     };
+}
 
+function getPersistedData() {
+    return {
+        version: 3,
+        savedAt: new Date().toISOString(),
+        novelName: $("chapterNovelName")?.value || "Novel",
+        chapters: state.chapters,
+        draft: getDraftData()
+    };
+}
+
+function openStorageDB() {
+    if (!("indexedDB" in window)) {
+        return Promise.resolve(null);
+    }
+
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(IDB_NAME, IDB_VERSION);
+
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+                db.createObjectStore(IDB_STORE, { keyPath: "key" });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function makeStoragePersistent() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-        console.warn("Tidak dapat menyimpan chapter sementara:", e);
+        if (navigator.storage?.persist) {
+            await navigator.storage.persist();
+        }
+    } catch (error) {
+        console.warn("Persistent browser storage request failed:", error);
     }
 }
 
-function loadState() {
+async function writeIndexedDB(data) {
+    const db = await openStorageDB();
+    if (!db) return false;
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(IDB_STORE, "readwrite");
+        transaction.objectStore(IDB_STORE).put({
+            key: IDB_KEY,
+            ...data
+        });
+
+        transaction.oncomplete = () => {
+            db.close();
+            resolve(true);
+        };
+
+        transaction.onerror = () => {
+            db.close();
+            reject(transaction.error);
+        };
+    });
+}
+
+async function readIndexedDB() {
+    const db = await openStorageDB();
+    if (!db) return null;
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(IDB_STORE, "readonly");
+        const request = transaction.objectStore(IDB_STORE).get(IDB_KEY);
+
+        request.onsuccess = () => {
+            db.close();
+            resolve(request.result || null);
+        };
+
+        request.onerror = () => {
+            db.close();
+            reject(request.error);
+        };
+    });
+}
+
+function writeLocalBackup(data) {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+        console.warn("Local backup tidak dapat disimpan:", error);
+    }
+}
 
-        const data = JSON.parse(raw);
+function readLocalBackup() {
+    const keys = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS];
 
-        if (data && data.chapters && typeof data.chapters === "object") {
-            state.chapters = data.chapters;
+    for (const key of keys) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw) return JSON.parse(raw);
+        } catch (error) {
+            console.warn(`Gagal membaca penyimpanan ${key}:`, error);
+        }
+    }
+
+    return null;
+}
+
+function queueSaveState() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        saveState();
+    }, 300);
+}
+
+function saveState() {
+    const data = getPersistedData();
+
+    // Simpan juga ke localStorage sebagai backup cepat.
+    writeLocalBackup(data);
+
+    // Antrekan penulisan IndexedDB agar penyimpanan berurutan dan tidak saling menimpa.
+    saveQueue = saveQueue
+        .catch(() => {})
+        .then(() => writeIndexedDB(data))
+        .catch(error => {
+            console.warn("Tidak dapat menyimpan ke IndexedDB:", error);
+        });
+
+    return saveQueue;
+}
+
+async function loadState() {
+    let data = null;
+
+    try {
+        data = await readIndexedDB();
+    } catch (error) {
+        console.warn("IndexedDB tidak dapat dibaca:", error);
+    }
+
+    if (!data) {
+        data = readLocalBackup();
+
+        // Migrasikan backup lama ke IndexedDB/versi baru.
+        if (data) {
+            try {
+                await writeIndexedDB({
+                    ...data,
+                    version: 3,
+                    savedAt: new Date().toISOString()
+                });
+                writeLocalBackup({
+                    ...data,
+                    version: 3,
+                    savedAt: new Date().toISOString()
+                });
+            } catch (error) {
+                console.warn("Migrasi penyimpanan gagal:", error);
+            }
+        }
+    }
+
+    if (data?.chapters && typeof data.chapters === "object") {
+        state.chapters = data.chapters;
+    }
+
+    if (data?.novelName && $("chapterNovelName")) {
+        $("chapterNovelName").value = data.novelName;
+    }
+
+    // Pulihkan draft yang belum sempat dijadikan chapter.
+    const draft = data?.draft;
+    if (draft && (draft.html || draft.chapterNumber)) {
+        if ($("chapterNumber")) {
+            $("chapterNumber").value = draft.chapterNumber || "";
         }
 
-        if (data?.novelName && $("chapterNovelName")) {
-            $("chapterNovelName").value = data.novelName;
-        }
-    } catch (e) {
-        console.warn("Data chapter sementara tidak dapat dimuat:", e);
+        setChapterEditorHtml(draft.html || "");
+
+        state.current = Number.isFinite(Number(draft.current))
+            ? Number(draft.current)
+            : null;
+    } else {
+        clearEditor({ persist: false });
     }
 
     refreshChapterList();
-    clearEditor();
+
+    if (state.current !== null && state.chapters[state.current] !== undefined) {
+        updatePreview(state.chapters[state.current]);
+    } else if (draft?.html) {
+        updatePreview(draft.html);
+    } else {
+        updatePreview("");
+    }
 }
 
 function sortedNumbers() {
@@ -113,33 +314,43 @@ function updatePreview(content = "") {
 
     if (!content) {
         preview.innerHTML =
-            '<div class="chapter-preview-empty">Pilih chapter untuk melihat isi sementara.</div>';
+            '<div class="chapter-preview-empty">Pilih chapter untuk melihat hasil bersih.</div>';
         return;
     }
 
-    // Source preview: tampilkan source HTML sebagai teks agar tag tidak dieksekusi.
-    const pre = document.createElement("pre");
-    pre.textContent = content;
-    preview.innerHTML = "";
-    preview.appendChild(pre);
+    // Konten sudah melewati cleanHtml(), sehingga preview dapat ditampilkan sebagai HTML visual.
+    preview.innerHTML = content;
 }
 
 function addChapter() {
-    const number = getNumber();
+    let number = getNumber();
+    const editorText = getChapterEditorText();
+
+    // Saat Tambah Chapter ditekan, otomatis deteksi nomor dari isi editor.
+    // Jika berhasil ditemukan, gunakan hasil deteksi tersebut.
+    const detectedNumberMatch = editorText.match(
+        /^\s*(?:BAB|Chapter|Ch\.)\s*(\d+)\b/im
+    );
+
+    if (detectedNumberMatch) {
+        number = Number(detectedNumberMatch[1]);
+        $("chapterNumber").value = number;
+    }
+
     if (number === null) {
-        alert("Masukkan nomor chapter terlebih dahulu.");
+        alert("Nomor chapter tidak ditemukan otomatis. Masukkan nomor chapter terlebih dahulu.");
         $("chapterNumber")?.focus();
         return;
     }
 
-    let content = $("chapterEditor")?.value || "";
+    let content = getChapterEditorHtml();
     if (!content.trim()) {
         alert("Paste hasil terjemahan terlebih dahulu.");
         $("chapterEditor")?.focus();
         return;
     }
 
-    content = normalizeChapterText(content);
+    content = cleanChapterContent(content, number);
 
     if (state.chapters[number] !== undefined) {
         const replace = confirm(
@@ -154,7 +365,7 @@ function addChapter() {
     // Sesuai workflow: setelah Add, input dikosongkan dan siap untuk chapter berikutnya.
     state.current = null;
     $("chapterNumber").value = "";
-    $("chapterEditor").value = "";
+    setChapterEditorHtml("");
     updatePreview("");
 
     refreshChapterList();
@@ -173,7 +384,7 @@ function loadChapter(number) {
     state.current = number;
 
     $("chapterNumber").value = number;
-    $("chapterEditor").value = state.chapters[number];
+    setChapterEditorHtml(state.chapters[number]);
 
     updatePreview(state.chapters[number]);
     refreshChapterList();
@@ -197,13 +408,13 @@ function updateChapter() {
         return;
     }
 
-    let content = $("chapterEditor")?.value || "";
+    let content = getChapterEditorHtml();
     if (!content.trim()) {
         alert("Isi chapter tidak boleh kosong.");
         return;
     }
 
-    content = normalizeChapterText(content);
+    content = cleanChapterContent(content, number);
     state.chapters[number] = content;
     saveState();
 
@@ -256,17 +467,23 @@ function clearAll() {
     refreshChapterList();
 }
 
-function clearEditor() {
+function clearEditor(options = {}) {
+    const { persist = true } = options;
+
     if ($("chapterNumber")) $("chapterNumber").value = "";
-    if ($("chapterEditor")) $("chapterEditor").value = "";
+    setChapterEditorHtml("");
 
     state.current = null;
     updatePreview("");
     refreshChapterList();
+
+    if (persist) {
+        saveState();
+    }
 }
 
 function detectChapter() {
-    const text = $("chapterEditor")?.value || "";
+    const text = getChapterEditorText();
 
     const patterns = [
         /<h[1-6]\b[^>]*>\s*(?:BAB|Bab|bab|Chapter|chapter)\s+(\d+)/i,
@@ -292,7 +509,7 @@ function importTxt(file) {
     const reader = new FileReader();
 
     reader.onload = () => {
-        $("chapterEditor").value = reader.result || "";
+        setChapterEditorHtml(reader.result || "");
 
         const fromName = file.name.match(
             /(?:chapter|ch|bab)[\s_-]*(\d+)/i
@@ -437,7 +654,20 @@ export function initChapterCollector() {
         event.target.value = "";
     });
 
-    $("chapterNovelName")?.addEventListener("input", saveState);
+    $("chapterNovelName")?.addEventListener("input", queueSaveState);
+    $("chapterNumber")?.addEventListener("input", queueSaveState);
+    $("chapterEditor")?.addEventListener("input", queueSaveState);
 
+    window.addEventListener("pagehide", () => {
+        saveState();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+            saveState();
+        }
+    });
+
+    makeStoragePersistent();
     loadState();
 }

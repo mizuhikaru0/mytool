@@ -1,4 +1,4 @@
-export function cleanHtml(raw) {
+export function cleanHtml(raw, options = {}) {
     if (!raw || !raw.trim()) return "";
 
     const parser = new DOMParser();
@@ -49,7 +49,15 @@ export function cleanHtml(raw) {
     // Regex judul khusus (prolog/epilog)
     const specialTitleRegex = /^(?:prolog|prologue|epilog|epilogue)\b/i;
 
-    // 6. Susun elemen: Judul Chapter di tengah, isi paragraf justify
+    // Heading judul dapat disesuaikan oleh pemanggil.
+    // Default tetap H2 agar perilaku HTML Cleaner lama tidak berubah.
+    const headingTag = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
+        String(options.headingTag || "h2").toLowerCase()
+    )
+        ? String(options.headingTag || "h2").toLowerCase()
+        : "h2";
+
+    // 6. Susun elemen: Judul Chapter di tengah, isi paragraf justify tanpa text-indent
     return lines.map((line, index) => {
         const plainText = line.replace(/<[^>]+>/g, "").trim();
 
@@ -64,15 +72,15 @@ export function cleanHtml(raw) {
                     ? `Chapter ${chapterNum}: ${chapterTitle}`
                     : `Chapter ${chapterNum}`;
 
-                return `<h1 style="text-align: center;">${formattedHeading}</h1>`;
+                return `<${headingTag} style="text-align: center;">${formattedHeading}</${headingTag}>`;
             }
 
             if (specialTitleRegex.test(plainText)) {
-                return `<h2 style="text-align: center;">${line}</h2>`;
+                return `<${headingTag} style="text-align: center;">${line}</${headingTag}>`;
             }
         }
 
-        // Teks isi cerita: Rata kanan-kiri (justify)
+        // Teks isi cerita: Rata kanan-kiri (justify), tanpa text-indent dan tanpa <br> tambahan
         return `<p style="text-align: justify;">${line}</p>`;
     }).join("\n");
 }
