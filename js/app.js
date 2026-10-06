@@ -7,7 +7,6 @@ import {
     previousChunk,
     nextChunk
 } from "./text-splitter.js";
-import { initChapterCollector } from "./chapter-collector.js";
 import {
     suggestLabel,
     generateTOCHtml,
@@ -49,6 +48,86 @@ function processHtml() {
     const cleaned = cleanHtml(rawContent);
     // Tampilkan langsung sebagai format visual di kotak output
     outputEl.innerHTML = cleaned;
+}
+
+// =========================================================
+// PASTE HANDLER — HTML CLEANER
+// Mempertahankan format rich text dari clipboard
+// =========================================================
+function initHtmlPaste() {
+    const editor = document.getElementById("htmlInput");
+
+    if (!editor) return;
+
+    editor.addEventListener("paste", event => {
+        event.preventDefault();
+
+        const clipboard = event.clipboardData;
+
+        if (!clipboard) return;
+
+        // Prioritaskan HTML asli dari clipboard
+        const html = clipboard.getData("text/html");
+
+        if (html && html.trim()) {
+            document.execCommand("insertHTML", false, html);
+            return;
+        }
+
+        // Jika clipboard hanya memiliki plain text,
+        // masukkan sebagai teks biasa.
+        const text = clipboard.getData("text/plain");
+
+        if (text) {
+            document.execCommand(
+                "insertText",
+                false,
+                text
+            );
+        }
+    });
+}
+
+async function pasteIntoHtmlEditor() {
+    const editor = document.getElementById("htmlInput");
+
+    if (!editor) return;
+
+    try {
+        // Clipboard API: pertahankan HTML jika tersedia.
+        if (navigator.clipboard && navigator.clipboard.read) {
+            const items = await navigator.clipboard.read();
+
+            for (const item of items) {
+                if (item.types.includes("text/html")) {
+                    const blob = await item.getType("text/html");
+                    const html = await blob.text();
+
+                    if (html.trim()) {
+                        editor.focus();
+                        document.execCommand("insertHTML", false, html);
+                        return;
+                    }
+                }
+            }
+
+            // Fallback ke plain text jika HTML tidak tersedia.
+            if (navigator.clipboard.readText) {
+                const text = await navigator.clipboard.readText();
+
+                if (text) {
+                    editor.focus();
+                    document.execCommand("insertText", false, text);
+                    return;
+                }
+            }
+        }
+
+        alert("Browser tidak mengizinkan akses Clipboard. Gunakan Ctrl+V di dalam kotak input.");
+    } catch (error) {
+        console.error("Gagal membaca Clipboard:", error);
+        alert("Clipboard tidak dapat diakses. Gunakan Ctrl+V di dalam kotak input.");
+    }
 }
 
 function processSplit() {
@@ -114,6 +193,10 @@ function handleAction(action, target, button) {
             copyRichText(target);
             break;
 
+        case "paste-html":
+            pasteIntoHtmlEditor();
+            break;
+
         case "process-html":
             processHtml();
             break;
@@ -149,17 +232,22 @@ function handleAction(action, target, button) {
                 resetTOC();
             }
             break;
-            case "parse-metadata": {
-         const raw = getValue("rawMetadataInput");
-         if (!raw || !raw.trim()) {
-             alert("Tempelkan teks metadata terlebih dahulu!");
-             return;
-         }
-         const ok = parseAndApplyMetadata(raw);
-         if (ok) {
-             alert("Metadata berhasil diterapkan ke seluruh kolom!");
-         }
-         break;
+
+        case "parse-metadata": {
+            const raw = getValue("rawMetadataInput");
+
+            if (!raw || !raw.trim()) {
+                alert("Tempelkan teks metadata terlebih dahulu!");
+                return;
+            }
+
+            const ok = parseAndApplyMetadata(raw);
+
+            if (ok) {
+                alert("Metadata berhasil diterapkan ke seluruh kolom!");
+            }
+
+            break;
         }
 
         default:
@@ -182,7 +270,10 @@ function initGenreDropdown() {
 
     // Perbarui label trigger saat checkbox dicentang/dilepas
     options.addEventListener("change", () => {
-        const checked = Array.from(options.querySelectorAll("input:checked")).map(cb => cb.value);
+        const checked = Array.from(
+            options.querySelectorAll("input:checked")
+        ).map(cb => cb.value);
+
         if (checked.length > 0) {
             trigger.textContent = checked.join(", ");
             trigger.classList.add("has-value");
@@ -202,12 +293,14 @@ function initGenreDropdown() {
 
 document.addEventListener("click", event => {
     const tabButton = event.target.closest(".tab-btn");
+
     if (tabButton) {
         switchTab(tabButton.dataset.tab, tabButton);
         return;
     }
 
     const actionButton = event.target.closest("[data-action]");
+
     if (actionButton) {
         handleAction(
             actionButton.dataset.action,
@@ -219,5 +312,6 @@ document.addEventListener("click", event => {
 
 // Jalankan inisialisasi dropdown genre
 initGenreDropdown();
-// Inisialisasi Chapter Collector
-initChapterCollector();
+
+// Jalankan paste handler HTML Cleaner
+initHtmlPaste();
