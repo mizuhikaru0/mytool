@@ -1,86 +1,274 @@
-export function cleanHtml(raw, options = {}) {
+export function cleanHtml(raw) {
     if (!raw || !raw.trim()) return "";
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(raw, "text/html");
 
-    // 1. Buang elemen antarmuka, iklan, skrip, dan sampah layout web sumber
+    // =========================================================
+    // 1. Buang elemen yang tidak diperlukan
+    // =========================================================
+
     doc.querySelectorAll(
         "script, style, button, svg, path, form, textarea, input, select, iframe, nav, footer, header, noscript"
     ).forEach(el => el.remove());
 
-    // 2. Ubah pembatas blok dan <br> menjadi newline penanda
-    let html = doc.body.innerHTML;
-    html = html.replace(/<\s*br\s*\/?>/gi, "\n");
-    html = html.replace(
-        /<\/?(?:div|p|h[1-6]|li|tr|section|article|blockquote)[^>]*>/gi,
-        "\n"
+    // Buang semua HTML comment, termasuk <!---->
+    const walker = document.createTreeWalker(
+        doc.body,
+        NodeFilter.SHOW_COMMENT
     );
 
-    // 3. Pertahankan tag format esensial (tebal, miring, garis bawah, coret, dan link)
-    html = html.replace(/<(\/?[a-zA-Z0-9]+)([^>]*)>/g, (match, tag, attrs) => {
-        const normalizedTag = tag.toLowerCase().replace("/", "");
+    const comments = [];
 
-        if (["b", "strong", "i", "em", "u", "s"].includes(normalizedTag)) {
-            return `<${tag.toLowerCase()}>`;
+    while (walker.nextNode()) {
+        comments.push(walker.currentNode);
+    }
+
+    comments.forEach(comment => comment.remove());
+
+    // =========================================================
+    // 2. Tag yang tetap dipertahankan
+    // =========================================================
+
+    const inlineTags = new Set([
+        "b",
+        "strong",
+        "i",
+        "em",
+        "u",
+        "s",
+        "del",
+        "mark",
+        "small",
+        "sub",
+        "sup",
+        "code",
+        "kbd",
+        "a"
+    ]);
+
+    const headingTags = new Set([
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6"
+    ]);
+
+    const blockTags = new Set([
+        "blockquote",
+        "ul",
+        "ol",
+        "li"
+    ]);
+
+    // =========================================================
+    // 3. Bersihkan atribut
+    // =========================================================
+
+    [...doc.body.querySelectorAll("*")].forEach(el => {
+        const tag = el.tagName.toLowerCase();
+
+        if (
+            !inlineTags.has(tag) &&
+            !headingTags.has(tag) &&
+            !blockTags.has(tag) &&
+            tag !== "br"
+        ) {
+            return;
         }
 
-        if (normalizedTag === "a") {
-            const hrefMatch = attrs.match(/href=(["'][^"']*["'])/i);
-            return hrefMatch
-                ? `<${tag.toLowerCase()} href=${hrefMatch[1]} target="_blank" rel="noopener noreferrer">`
-                : "";
+        // Simpan href sebelum semua atribut dihapus
+        let href = null;
+
+        if (tag === "a") {
+            href = el.getAttribute("href");
         }
 
-        return "";
+        [...el.attributes].forEach(attr => {
+            el.removeAttribute(attr.name);
+        });
+
+        if (tag === "a" && href) {
+            el.setAttribute("href", href);
+        }
     });
 
-    // 4. Bersihkan spasi kosong HTML non-breaking
-    html = html.replace(/&nbsp;/gi, " ");
+    // =========================================================
+    // 4. Konversi DOM menjadi teks + HTML formatting
+    //
+    // <p>  -> newline
+    // <br> -> newline
+    // heading -> tetap sebagai HTML
+    // bold/italic/dll -> tetap sebagai HTML
+    // =========================================================
 
-    // 5. Filter baris yang tidak kosong
-    const lines = html
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => line.replace(/<[^>]+>/g, "").trim().length > 0);
-
-    // Regex judul chapter (angka + judul opsional)
-    const chapterRegex = /^(?:bab|chapter|ch\.?)\s*(\d+)(?:\s*[:\-–—]?\s*(.*))?$/i;
-    // Regex judul khusus (prolog/epilog)
-    const specialTitleRegex = /^(?:prolog|prologue|epilog|epilogue)\b/i;
-
-    // Heading judul dapat disesuaikan oleh pemanggil.
-    // Default tetap H2 agar perilaku HTML Cleaner lama tidak berubah.
-    const headingTag = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-        String(options.headingTag || "h2").toLowerCase()
-    )
-        ? String(options.headingTag || "h2").toLowerCase()
-        : "h2";
-
-    // 6. Susun elemen: Judul Chapter di tengah, isi paragraf justify tanpa text-indent
-    return lines.map((line, index) => {
-        const plainText = line.replace(/<[^>]+>/g, "").trim();
-
-        // Cek 2 baris awal untuk penomoran chapter
-        if (index <= 1) {
-            const match = plainText.match(chapterRegex);
-            if (match) {
-                const chapterNum = match[1];
-                const chapterTitle = match[2] ? match[2].trim() : "";
-
-                const formattedHeading = chapterTitle.length > 0
-                    ? `Chapter ${chapterNum}: ${chapterTitle}`
-                    : `Chapter ${chapterNum}`;
-
-                return `<${headingTag} style="text-align: center;">${formattedHeading}</${headingTag}>`;
-            }
-
-            if (specialTitleRegex.test(plainText)) {
-                return `<${headingTag} style="text-align: center;">${line}</${headingTag}>`;
-            }
+    function renderNode(node, depth = 0) {
+        // -----------------------------
+        // Text node
+        // -----------------------------
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.nodeValue || "";
         }
 
-        // Teks isi cerita: Rata kanan-kiri (justify), tanpa text-indent dan tanpa <br> tambahan
-        return `<p style="text-align: justify;">${line}</p>`;
-    }).join("\n");
+        // -----------------------------
+        // Comment
+        // -----------------------------
+        if (node.nodeType === Node.COMMENT_NODE) {
+            return "";
+        }
+
+        // Bukan element
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return "";
+        }
+
+        const tag = node.tagName.toLowerCase();
+
+        // -----------------------------
+        // <br>
+        // -----------------------------
+        if (tag === "br") {
+            return "\n";
+        }
+
+        // -----------------------------
+        // Isi elemen
+        // -----------------------------
+        const children = [...node.childNodes]
+            .map(child => renderNode(child, depth + 1))
+            .join("");
+
+        // -----------------------------
+        // Heading
+        // -----------------------------
+        if (headingTags.has(tag)) {
+            return `\n<${tag}>${children.trim()}</${tag}>\n\n`;
+        }
+
+        // -----------------------------
+        // Inline formatting
+        // -----------------------------
+        if (inlineTags.has(tag)) {
+            if (tag === "a") {
+                const href = node.getAttribute("href");
+
+                if (href) {
+                    return `<a href="${href}">${children}</a>`;
+                }
+
+                return children;
+            }
+
+            return `<${tag}>${children}</${tag}>`;
+        }
+
+        // -----------------------------
+        // Blockquote
+        // -----------------------------
+        if (tag === "blockquote") {
+            return `\n<blockquote>${children.trim()}</blockquote>\n\n`;
+        }
+
+        // -----------------------------
+        // List
+        // -----------------------------
+        if (tag === "ul" || tag === "ol") {
+            return `\n<${tag}>\n${children.trim()}\n</${tag}>\n\n`;
+        }
+
+        // -----------------------------
+        // List item
+        // -----------------------------
+        if (tag === "li") {
+            return `<li>${children.trim()}</li>\n`;
+        }
+
+        // -----------------------------
+        // <p>
+        // -----------------------------
+        if (tag === "p") {
+            const content = children.trim();
+
+            if (!content) {
+                return "\n";
+            }
+
+            return `\n${content}\n`;
+        }
+
+        // -----------------------------
+        // Elemen lain:
+        // hanya ambil isinya
+        // -----------------------------
+        return children;
+    }
+
+    let result = [...doc.body.childNodes]
+        .map(node => renderNode(node))
+        .join("");
+
+    // =========================================================
+    // 5. Bersihkan whitespace
+    // =========================================================
+
+    result = result
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+
+        // Buang spasi di akhir baris
+        .replace(/[ \t]+\n/g, "\n")
+
+        // Buang spasi berlebihan di awal baris
+        .replace(/\n[ \t]+/g, "\n")
+
+        // Maksimal dua baris kosong
+        .replace(/\n{3,}/g, "\n\n")
+
+        .trim();
+
+    // =========================================================
+    // 6. Deteksi dan normalisasi judul Chapter
+    // =========================================================
+
+    const lines = result.split("\n");
+
+    const chapterRegex =
+        /^(?:bab|chapter|ch\.?)\s*(\d+)(?:\s*[:\-–—]?\s*(.*))?$/i;
+
+    const specialTitleRegex =
+        /^(?:prolog|prologue|epilog|epilogue)\b/i;
+
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+
+        const plainText = lines[i]
+            .replace(/<[^>]+>/g, "")
+            .trim();
+
+        const match = plainText.match(chapterRegex);
+
+        if (match) {
+            const number = match[1];
+            const title = match[2]
+                ? match[2].trim()
+                : "";
+
+            lines[i] = title
+                ? `<h1>Chapter ${number}: ${title}</h1>`
+                : `<h1>Chapter ${number}</h1>`;
+
+            break;
+        }
+
+        if (specialTitleRegex.test(plainText)) {
+            lines[i] = `<h1>${plainText}</h1>`;
+            break;
+        }
+    }
+
+    return lines
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
 }
